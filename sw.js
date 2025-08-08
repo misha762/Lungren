@@ -9,7 +9,11 @@ const urlsToCache = [
   '/script.js',
   '/manifest.json',
   '/export.js',
-  '/sw.js'
+  '/sw.js',
+  '/favicon.ico',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png'
 ];
 
 // Стратегія кешування: Network First для динамічного контенту
