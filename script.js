@@ -51,12 +51,13 @@ class PlanLungrena {
     // Визначення поточної фази
     getCurrentPhase() {
         const now = new Date();
-        const weeksSinceStart = Math.floor((now - this.startDate) / (7 * 24 * 60 * 60 * 1000));
+        const daysSinceStart = Math.floor((now - this.startDate) / (24 * 60 * 60 * 1000));
+        const weeksSinceStart = Math.floor(daysSinceStart / 7);
         
-        if (weeksSinceStart < 8) return 1; // Фаза 1: 1-2 місяці
-        if (weeksSinceStart < 20) return 2; // Фаза 2: 3-5 місяців
-        if (weeksSinceStart < 32) return 3; // Фаза 3: 6-8 місяців
-        return 4; // Фаза 4: 9-12 місяців
+        if (weeksSinceStart < 8) return 1; // Фаза 1: 0-7 тижнів (1-2 місяці)
+        if (weeksSinceStart < 20) return 2; // Фаза 2: 8-19 тижнів (3-5 місяців)
+        if (weeksSinceStart < 32) return 3; // Фаза 3: 20-31 тиждень (6-8 місяців)
+        return 4; // Фаза 4: 32+ тижнів (9-12 місяців)
     }
 
     // Тренувальні плани для кожної фази
@@ -278,7 +279,10 @@ class PlanLungrena {
     // Оновлення статистики
     updateStats() {
         const now = new Date();
-        const weeksSinceStart = Math.floor((now - this.startDate) / (7 * 24 * 60 * 60 * 1000));
+        const daysSinceStart = Math.floor((now - this.startDate) / (24 * 60 * 60 * 1000));
+        const weeksSinceStart = Math.floor(daysSinceStart / 7);
+        
+        // Підрахунок тренувань за поточний тиждень
         const thisWeekWorkouts = this.workoutHistory.filter(workout => {
             const workoutDate = new Date(workout.date);
             const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
@@ -286,8 +290,43 @@ class PlanLungrena {
             return workoutDate >= weekStart && workoutDate <= weekEnd;
         }).length;
         
+        // Загальна кількість виконаних тренувань
+        const totalWorkouts = this.workoutHistory.length;
+        
+        // Оновлюємо всі статистики
+        document.getElementById('daysCount').textContent = daysSinceStart;
         document.getElementById('weeksCount').textContent = weeksSinceStart;
         document.getElementById('weeklyWorkouts').textContent = thisWeekWorkouts;
+        
+        // Додаємо загальну статистику, якщо є елемент для неї
+        const totalWorkoutsElement = document.getElementById('totalWorkouts');
+        if (totalWorkoutsElement) {
+            totalWorkoutsElement.textContent = totalWorkouts;
+        }
+        
+        // Додаємо детальну інформацію в заголовок днів
+        this.updateDaysDisplay(daysSinceStart, weeksSinceStart);
+    }
+    
+    // Оновлення відображення днів з додатковою інформацією
+    updateDaysDisplay(days, weeks) {
+        const daysElement = document.getElementById('daysCount');
+        const remainingDaysInWeek = 7 - (days % 7);
+        
+        // Якщо це перший день програми
+        if (days === 0) {
+            daysElement.textContent = "День 1";
+            daysElement.title = "Перший день програми!";
+        } else {
+            daysElement.textContent = days + 1; // +1 бо рахуємо з 1
+            
+            // Додаємо інформацію про залишок днів до наступного тижня
+            if (remainingDaysInWeek === 7) {
+                daysElement.title = `День ${days + 1}. Початок ${weeks + 1}-го тижня`;
+            } else {
+                daysElement.title = `День ${days + 1}. До ${weeks + 1}-го тижня залишилось ${remainingDaysInWeek} днів`;
+            }
+        }
     }
 
     // Завантаження історії тренувань
@@ -415,8 +454,48 @@ class PlanLungrena {
     // Початок тренування
     startWorkout() {
         if (this.currentWorkout) {
+            // Показуємо інформацію про тренування
             alert(`Починаємо тренування: ${this.currentWorkout.title}\n\n${this.currentWorkout.description}\n\nТривалість: ${this.currentWorkout.duration} хвилин`);
+            
+            // Автоматично зараховуємо тренування
+            this.autoSaveWorkout();
         }
+    }
+
+    // Автоматичне збереження тренування при натисканні "Почати тренування"
+    autoSaveWorkout() {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Перевіряємо, чи вже є тренування на сьогодні
+        const existingWorkout = this.workoutHistory.find(workout => workout.date === today);
+        
+        if (existingWorkout) {
+            // Якщо вже є тренування сьогодні, просто показуємо повідомлення
+            console.log('Тренування вже зараховано на сьогодні');
+            return;
+        }
+
+        // Створюємо новий запис тренування
+        const newWorkout = {
+            id: Date.now(),
+            date: today,
+            type: this.currentWorkout.type,
+            duration: this.currentWorkout.duration,
+            notes: `Автоматично зараховано: ${this.currentWorkout.title}`,
+            rating: 8 // Середня оцінка за замовчуванням
+        };
+
+        // Додаємо до історії
+        this.workoutHistory.push(newWorkout);
+        
+        // Зберігаємо в localStorage
+        localStorage.setItem('workoutHistory', JSON.stringify(this.workoutHistory));
+        
+        // Оновлюємо статистику та історію
+        this.updateStats();
+        this.loadWorkoutHistory();
+        
+        console.log('Тренування автоматично зараховано!');
     }
 
     // Показати деталі тренування
@@ -613,3 +692,4 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.schedule-section').style.display = 'none';
     document.querySelector('.settings-section').style.display = 'none';
 });
+
