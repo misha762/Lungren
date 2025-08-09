@@ -186,8 +186,8 @@ body {
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
 }
 
 .stat-card {
@@ -212,14 +212,15 @@ body {
 }
 
 .stat-content h3 {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #666;
     margin-bottom: 8px;
     font-weight: 500;
+    line-height: 1.2;
 }
 
 .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: #333;
 }
